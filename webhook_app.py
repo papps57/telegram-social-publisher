@@ -18,25 +18,25 @@ app = Flask(__name__)
 application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 application.add_handler(conversation_handler)
 
-
-def _init_app():
-    import asyncio
-    try:
-        asyncio.run(application.initialize())
-    except RuntimeError:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(application.initialize())
+_initialized = False
 
 
-_init_app()
+async def _ensure_init():
+    global _initialized
+    if not _initialized:
+        await application.initialize()
+        _initialized = True
 
 
 @app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json(force=True)
     update = Update.de_json(data, application.bot)
+
     async def process():
+        await _ensure_init()
         await application.process_update(update)
+
     import asyncio
     asyncio.run(process())
     return "OK", 200
@@ -49,11 +49,16 @@ def health():
 
 def main():
     import asyncio
-    asyncio.run(application.bot.set_webhook(
-        url=f"https://{sys.argv[1]}/{TELEGRAM_BOT_TOKEN}",
-        allowed_updates=["message", "callback_query"],
-    ))
-    logger.info("Webhook configurato su %s", sys.argv[1])
+
+    async def _setup():
+        await _ensure_init()
+        await application.bot.set_webhook(
+            url=f"https://{sys.argv[1]}/{TELEGRAM_BOT_TOKEN}",
+            allowed_updates=["message", "callback_query"],
+        )
+        logger.info("Webhook configurato su %s", sys.argv[1])
+
+    asyncio.run(_setup())
 
 
 if __name__ == "__main__":
