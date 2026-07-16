@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import signal
 from telegram.ext import Application
 from config import TELEGRAM_BOT_TOKEN
 from bot import conversation_handler
@@ -16,10 +17,19 @@ async def main():
             url_path=TELEGRAM_BOT_TOKEN,
             webhook_url=f"https://{sys.argv[2]}/{TELEGRAM_BOT_TOKEN}",
         )
-    else:
-        print("Avvio in polling... Premi Ctrl+C per fermare.")
-        await app.run_polling(allowed_updates=["message", "callback_query"])
+        return
+
+    print("Avvio in polling... Premi Ctrl+C per fermare.")
+    async with app:
+        await app.start()
+        await app.updater.start_polling(allowed_updates=["message", "callback_query"])
+        stop = asyncio.Event()
+        await stop.wait()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
