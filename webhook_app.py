@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import logging
 from flask import Flask, request, jsonify
 from telegram import Update
@@ -18,14 +19,14 @@ app = Flask(__name__)
 application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 application.add_handler(conversation_handler)
 
-_initialized = False
+_loop = asyncio.new_event_loop()
 
 
-async def _ensure_init():
-    global _initialized
-    if not _initialized:
-        await application.initialize()
-        _initialized = True
+async def _init():
+    await application.initialize()
+
+
+_loop.run_until_complete(_init())
 
 
 @app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
@@ -33,12 +34,7 @@ def webhook():
     data = request.get_json(force=True)
     update = Update.de_json(data, application.bot)
 
-    async def process():
-        await _ensure_init()
-        await application.process_update(update)
-
-    import asyncio
-    asyncio.run(process())
+    _loop.run_until_complete(application.process_update(update))
     return "OK", 200
 
 
@@ -48,10 +44,7 @@ def health():
 
 
 def main():
-    import asyncio
-
     async def _setup():
-        await _ensure_init()
         await application.bot.set_webhook(
             url=f"https://{sys.argv[1]}/{TELEGRAM_BOT_TOKEN}",
             allowed_updates=["message", "callback_query"],
