@@ -10,9 +10,12 @@ from telegram.ext import (
 from config import PAGES, ALLOWED_USER_IDS, token_days_left
 
 
-class MEDIA_GROUP(filters.MessageFilter):
+class _MediaGroup(filters.MessageFilter):
     def filter(self, message):
         return bool(message.media_group_id)
+
+
+MEDIA_GROUP = _MediaGroup()
 
 
 from utils import download_image, cleanup_temp
@@ -243,8 +246,8 @@ conversation_handler = ConversationHandler(
         SELECT_PAGE: [CallbackQueryHandler(select_page, pattern=r"^page_\d+$")],
         AWAIT_CONTENT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.CAPTION, receive_text),
-            MessageHandler(filters.PHOTO & ~filters.MEDIA_GROUP, receive_single_photo),
-            MessageHandler(filters.MEDIA_GROUP, receive_album_photo),
+            MessageHandler(filters.PHOTO & ~MEDIA_GROUP, receive_single_photo),
+            MessageHandler(MEDIA_GROUP, receive_album_photo),
             CommandHandler("done", done),
         ],
         CONFIRM_POST: [
