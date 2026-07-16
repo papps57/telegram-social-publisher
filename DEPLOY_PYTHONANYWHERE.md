@@ -7,7 +7,7 @@ Apri un **Bash console** su PythonAnywhere:
 ```bash
 git clone https://github.com/papps57/telegram-social-publisher.git
 cd telegram-social-publisher
-pip install -r requirements.txt flask
+pip install -r requirements.txt
 ```
 
 ## 2. Configurare il Web App
