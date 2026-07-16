@@ -8,6 +8,13 @@ from telegram.ext import (
     filters,
 )
 from config import PAGES, ALLOWED_USER_IDS, token_days_left
+
+
+class MEDIA_GROUP(filters.MessageFilter):
+    def filter(self, message):
+        return bool(message.media_group_id)
+
+
 from utils import download_image, cleanup_temp
 from meta_publisher import publish_all
 
