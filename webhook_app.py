@@ -19,6 +19,18 @@ application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 application.add_handler(conversation_handler)
 
 
+def _init_app():
+    import asyncio
+    try:
+        asyncio.run(application.initialize())
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(application.initialize())
+
+
+_init_app()
+
+
 @app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json(force=True)
